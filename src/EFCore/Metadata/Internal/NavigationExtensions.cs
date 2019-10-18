@@ -118,7 +118,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         public static MemberIdentity CreateMemberIdentity([CanBeNull] this INavigation navigation)
             => navigation?.GetIdentifyingMemberInfo() == null
                 ? MemberIdentity.Create(navigation?.Name)
-                : MemberIdentity.Create(navigation.GetIdentifyingMemberInfo());
+                : MemberIdentity.Create(navigation?.GetIdentifyingMemberInfo());
 
         /// <summary>
         ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
