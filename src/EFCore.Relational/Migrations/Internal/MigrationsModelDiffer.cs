@@ -716,7 +716,7 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
                 }
 
                 var clrType = clrProperty.DeclaringType;
-                var index = clrType.GetTypeInfo().DeclaredProperties
+                var index = clrType?.GetTypeInfo().DeclaredProperties
                     .IndexOf(clrProperty, PropertyInfoEqualityComparer.Instance);
 
                 Debug.Assert(clrType != null);
@@ -751,7 +751,7 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
                 groups.Add(clrProperty, properties);
 
                 var clrType = clrProperty.DeclaringType;
-                var index = clrType.GetTypeInfo().DeclaredProperties
+                var index = clrType?.GetTypeInfo().DeclaredProperties
                     .IndexOf(clrProperty, PropertyInfoEqualityComparer.Instance);
 
                 Debug.Assert(clrType != null);

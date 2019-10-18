@@ -2558,13 +2558,6 @@ namespace Microsoft.EntityFrameworkCore
         public static void Load<TSource>([NotNull] this IQueryable<TSource> source)
         {
             Check.NotNull(source, nameof(source));
-
-            using (var enumerator = source.GetEnumerator())
-            {
-                while (enumerator.MoveNext())
-                {
-                }
-            }
         }
 
         /// <summary>
@@ -2581,13 +2574,6 @@ namespace Microsoft.EntityFrameworkCore
             [NotNull] this IQueryable<TSource> source, CancellationToken cancellationToken = default)
         {
             Check.NotNull(source, nameof(source));
-
-            await using (var enumerator = source.AsAsyncEnumerable().GetAsyncEnumerator(cancellationToken))
-            {
-                while (await enumerator.MoveNextAsync())
-                {
-                }
-            }
         }
 
         #endregion

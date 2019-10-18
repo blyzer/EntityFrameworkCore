@@ -1154,7 +1154,7 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
                         }
                         else
                         {
-                            var defaultValue = asProperty.ClrType.GetDefaultValue();
+                            var defaultValue = asProperty?.ClrType.GetDefaultValue();
                             if (!equals(currentValue, defaultValue))
                             {
                                 WritePropertyValue(asProperty, defaultValue, isMaterialization);
