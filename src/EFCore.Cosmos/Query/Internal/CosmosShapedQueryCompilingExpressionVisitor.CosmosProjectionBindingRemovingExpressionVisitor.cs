@@ -274,7 +274,6 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.Query.Internal
 
                         // These are the expressions added by JObjectInjectingExpressionVisitor
                         var jObjectBlock = (BlockExpression)Visit(includeExpression.EntityExpression);
-                        var jObjectVariable = jObjectBlock.Variables.Single(v => v.Type == typeof(JObject));
                         var jObjectCondition = (ConditionalExpression)jObjectBlock.Expressions[jObjectBlock.Expressions.Count - 1];
 
                         var shaperBlock = (BlockExpression)jObjectCondition.IfFalse;

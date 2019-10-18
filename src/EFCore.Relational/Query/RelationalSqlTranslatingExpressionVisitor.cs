@@ -499,7 +499,7 @@ namespace Microsoft.EntityFrameworkCore.Query
         {
             switch (expression)
             {
-                case ConstantExpression constantExpression:
+                case ConstantExpression:
                     return true;
 
                 case NewExpression newExpression:

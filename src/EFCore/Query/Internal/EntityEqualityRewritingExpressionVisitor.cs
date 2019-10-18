@@ -962,7 +962,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         {
             switch (expression)
             {
-                case ConstantExpression constantExpression:
+                case ConstantExpression:
                     return true;
 
                 case NewExpression newExpression:

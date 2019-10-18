@@ -48,7 +48,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                 }
 
                 var principalEntityType = fk.PrincipalEntityType;
-                var declaringEntityType = fk.DeclaringEntityType;
                 if (table == principalEntityType.GetTableName()
                     && schema == principalEntityType.GetSchema())
                 {

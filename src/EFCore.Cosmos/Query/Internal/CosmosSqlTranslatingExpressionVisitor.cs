@@ -371,7 +371,7 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.Query.Internal
         {
             switch (expression)
             {
-                case ConstantExpression constantExpression:
+                case ConstantExpression:
                     return true;
 
                 case NewExpression newExpression:

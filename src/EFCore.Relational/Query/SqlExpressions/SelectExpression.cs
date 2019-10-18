@@ -1220,7 +1220,6 @@ namespace Microsoft.EntityFrameworkCore.Query.SqlExpressions
                 _identifier.AddRange(innerSelectExpression._identifier);
             }
 
-            var innerTable = innerSelectExpression.Tables.Single();
             var joinTable = (TableExpressionBase)(joinType switch
             {
                 JoinType.InnerJoin => new InnerJoinExpression(innerTable, joinPredicate),
