@@ -2988,7 +2988,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             if (foreignKey == null)
             {
                 return Metadata.AddForeignKey(
-                    dependentProperties, principalKey, principalType, componentConfigurationSource: null, configurationSource.Value);
+                    dependentProperties, principalKey, principalType, componentConfigurationSource: null, configurationSource?.Value);
             }
 
             var oldFKProperties = foreignKey.Properties;

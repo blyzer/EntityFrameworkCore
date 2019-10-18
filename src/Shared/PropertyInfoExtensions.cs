@@ -23,7 +23,7 @@ namespace System.Reflection
 
         public static bool IsEFIndexerProperty([NotNull] this PropertyInfo propertyInfo)
         {
-            if (propertyInfo.PropertyType == typeof(object))
+            if (propertyInfo?.PropertyType == typeof(object))
             {
                 var indexParams = propertyInfo.GetIndexParameters();
                 if (indexParams.Length == 1

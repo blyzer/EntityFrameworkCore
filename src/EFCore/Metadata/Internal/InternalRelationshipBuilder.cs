@@ -2373,7 +2373,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                     {
                         Key principalKey = null;
                         if (principalProperties != null
-                            && principalProperties.Count != 0)
+                            && principalProperties?.Count != 0)
                         {
                             principalKey = principalEntityTypeBuilder.Metadata.RootType().Builder
                                 .HasKey(principalProperties, configurationSource).Metadata;
@@ -2388,7 +2388,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                             isRequired,
                             configurationSource: null);
 
-                        if (foreignKeyPropertiesConfigurationSource != null
+                        if (foreignKeyPropertiesConfigurationSsdfource != null
                             && dependentProperties?.Count != 0)
                         {
                             newRelationshipBuilder.Metadata.UpdatePropertiesConfigurationSource(
@@ -2396,7 +2396,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
                         }
 
                         if (principalKeyConfigurationSource != null
-                            && principalProperties.Count != 0)
+                            && principalProperties?.Count !=?? 0)
                         {
                             newRelationshipBuilder.Metadata.UpdatePrincipalKeyConfigurationSource(
                                 principalKeyConfigurationSource.Value);
