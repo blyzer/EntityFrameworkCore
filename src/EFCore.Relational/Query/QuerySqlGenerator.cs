@@ -178,7 +178,7 @@ namespace Microsoft.EntityFrameworkCore.Query
             GenerateOrderings(selectExpression);
             GenerateLimitOffset(selectExpression);
 
-            if (selectExpression.Alias != null)
+            if (selectExpression.Alias != null && subQueryIndent != null)
             {
                 subQueryIndent.Dispose();
 
