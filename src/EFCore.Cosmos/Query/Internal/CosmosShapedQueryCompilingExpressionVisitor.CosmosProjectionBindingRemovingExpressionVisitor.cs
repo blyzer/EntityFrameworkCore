@@ -408,16 +408,7 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.Query.Internal
                 else
                 {
                     entry.SetIsLoaded(navigation);
-                    if (relatedEntities != null)
-                    {
-                        using (var enumerator = relatedEntities.GetEnumerator())
-                        {
-                            while (enumerator.MoveNext())
-                            {
-                            }
-                        }
-                    }
-                    else
+                    if (relatedEntities == null)
                     {
                         initialize((TIncludingEntity)entity);
                     }
