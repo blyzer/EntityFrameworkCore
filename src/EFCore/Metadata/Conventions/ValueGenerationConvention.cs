@@ -188,8 +188,8 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
         {
             var onOwnedType = key?.DeclaringEntityType.IsOwned();
             return key != null
-                   && (onOwnedType.Value && key.Properties.Count(p => !p.IsForeignKey()) == 1
-                       || !onOwnedType.Value && key.Properties.Count == 1);
+                   && (onOwnedType?.Value && key.Properties.Count(p => !p.IsForeignKey()) == 1
+                       || !onOwnedType?.Value && key.Properties.Count == 1);
         }
 
         /// <summary>

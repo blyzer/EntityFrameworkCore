@@ -1615,7 +1615,7 @@ namespace Microsoft.EntityFrameworkCore.Query.SqlExpressions
             }
 
             if (!(Having == null && selectExpression.Having == null
-                  || Having != null && Predicate.Equals(selectExpression.Having)))
+                  || Having != null && Predicate?.Equals(selectExpression.Having)))
             {
                 return false;
             }
