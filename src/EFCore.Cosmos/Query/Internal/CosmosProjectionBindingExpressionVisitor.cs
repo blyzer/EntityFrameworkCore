@@ -114,12 +114,8 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.Query.Internal
                             QueryCompilationContext.QueryContextParameter,
                             Expression.Constant(parameterExpression.Name));
 
-                    case MaterializeCollectionNavigationExpression materializeCollectionNavigationExpression:
+                    case MaterializeCollectionNavigationExpression:
                         return base.Visit(expression);
-                    //return _selectExpression.AddCollectionProjection(
-                    //    _queryableMethodTranslatingExpressionVisitor.TranslateSubquery(
-                    //        materializeCollectionNavigationExpression.Subquery),
-                    //    materializeCollectionNavigationExpression.Navigation, null);
                 }
 
                 var translation = _sqlTranslator.Translate(expression);
