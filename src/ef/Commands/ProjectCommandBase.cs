@@ -58,8 +58,9 @@ namespace Microsoft.EntityFrameworkCore.Tools.Commands
                         _rootNamespace.Value(),
                         _language.Value());
                 }
-                catch (MissingMethodException) // NB: Thrown with EF Core 3.1
+                catch (MissingMethodException Me) // NB: Thrown with EF Core 3.1
                 {
+                    throw new MissingMethodException(Me.Message);
                 }
 #elif !NETCOREAPP2_0
 #error target frameworks need to be updated.
