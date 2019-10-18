@@ -23,6 +23,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         private readonly EntityReferenceOptionalMarkingExpressionVisitor _entityReferenceOptionalMarkingExpressionVisitor;
         private readonly ISet<string> _parameterNames = new HashSet<string>();
         private readonly EnumerableToQueryableMethodConvertingExpressionVisitor _enumerableToQueryableMethodConvertingExpressionVisitor;
+        private readonly EntityEqualityRewritingExpressionVisitor _entityEqualityRewritingExpressionVisitor;
         private readonly ParameterExtractingExpressionVisitor _parameterExtractingExpressionVisitor;
 
         private readonly Dictionary<IEntityType, LambdaExpression> _parameterizedQueryFilterPredicateCache
@@ -44,6 +45,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             _reducingExpressionVisitor = new ReducingExpressionVisitor();
             _entityReferenceOptionalMarkingExpressionVisitor = new EntityReferenceOptionalMarkingExpressionVisitor();
             _enumerableToQueryableMethodConvertingExpressionVisitor = new EnumerableToQueryableMethodConvertingExpressionVisitor();
+            _entityEqualityRewritingExpressionVisitor = new EntityEqualityRewritingExpressionVisitor(_queryCompilationContext);
             _parameterExtractingExpressionVisitor = new ParameterExtractingExpressionVisitor(
                 evaluatableExpressionFilter,
                 _parameters,
@@ -162,7 +164,8 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
         {
             if (!_queryCompilationContext.IgnoreQueryFilters)
             {
-                var entityType = _queryCompilationContext.Model.FindEntityType(navigationExpansionExpression.Type.GetSequenceType());
+                var sequenceType = navigationExpansionExpression.Type.GetSequenceType();
+                var entityType = _queryCompilationContext.Model.FindEntityType(sequenceType);
                 var rootEntityType = entityType.GetRootType();
                 var queryFilter = rootEntityType.GetQueryFilter();
                 if (queryFilter != null)
@@ -172,13 +175,22 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                         filterPredicate = queryFilter;
                         filterPredicate = (LambdaExpression)_parameterExtractingExpressionVisitor.ExtractParameters(filterPredicate);
                         filterPredicate = (LambdaExpression)_enumerableToQueryableMethodConvertingExpressionVisitor.Visit(filterPredicate);
+
+                        // We need to do entity equality, but that requires a full method call on a query root to properly flow the
+                        // entity information through. Construct a MethodCall wrapper for the predicate with the proper query root.
+                        var filterWrapper = Expression.Call(
+                            QueryableMethods.Where.MakeGenericMethod(rootEntityType.ClrType),
+                            NullAsyncQueryProvider.Instance.CreateEntityQueryableExpression(rootEntityType.ClrType),
+                            filterPredicate);
+                        var rewrittenFilterWrapper  = (MethodCallExpression)_entityEqualityRewritingExpressionVisitor.Rewrite(filterWrapper);
+                        filterPredicate = rewrittenFilterWrapper.Arguments[1].UnwrapLambdaFromQuote();
+
                         _parameterizedQueryFilterPredicateCache[rootEntityType] = filterPredicate;
                     }
 
                     filterPredicate =
                         (LambdaExpression)new SelfReferenceEntityQueryableRewritingExpressionVisitor(this, entityType).Visit(
                             filterPredicate);
-                    var sequenceType = navigationExpansionExpression.Type.GetSequenceType();
 
                     // if we are constructing EntityQueryable of a derived type, we need to re-map filter predicate to the correct derived type
                     var filterPredicateParameter = filterPredicate.Parameters[0];
@@ -1235,13 +1247,16 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
                 case NewExpression newExpression:
                 {
+                    // For .NET Framework only. If ctor is null that means the type is struct and has no ctor args.
+                    if (newExpression.Constructor == null)
+                    {
+                        return Expression.Default(newExpression.Type);
+                    }
+
                     var arguments = new Expression[newExpression.Arguments.Count];
                     for (var i = 0; i < newExpression.Arguments.Count; i++)
                     {
-                        arguments[i] = newExpression.Arguments[i] is NewExpression
-                                       || newExpression.Arguments[i] is NavigationTreeExpression
-                            ? SnapshotExpression(newExpression.Arguments[i])
-                            : Expression.Default(newExpression.Arguments[i].Type);
+                        arguments[i] = SnapshotExpression(newExpression.Arguments[i]);
                     }
 
                     return newExpression.Update(arguments);

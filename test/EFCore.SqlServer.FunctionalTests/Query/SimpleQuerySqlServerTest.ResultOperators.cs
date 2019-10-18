@@ -1152,7 +1152,7 @@ WHERE [o].[OrderID] IN (10248, 10249)");
             base.Contains_over_entityType_with_null_should_rewrite_to_identity_equality();
 
             AssertSql(
-                @"@__entity_equality_p_0_OrderID='' (DbType = Int32)
+                @"@__entity_equality_p_0_OrderID=NULL (DbType = Int32)
 
 SELECT CASE
     WHEN @__entity_equality_p_0_OrderID IN (
@@ -1349,6 +1349,21 @@ WHERE ([c].[CustomerID] LIKE N'F%') AND (((
 
             AssertSql(
                 @"SELECT SUM(CAST([o].[OrderID] AS bigint))
+FROM [Orders] AS [o]");
+        }
+
+        public override async Task Count_on_projection_with_client_eval(bool isAsync)
+        {
+            await base.Count_on_projection_with_client_eval(isAsync);
+
+            AssertSql(
+                @"SELECT COUNT(*)
+FROM [Orders] AS [o]",
+                //
+                @"SELECT COUNT(*)
+FROM [Orders] AS [o]",
+                //
+                @"SELECT COUNT(*)
 FROM [Orders] AS [o]");
         }
     }

@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -340,10 +339,14 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
             protected override Expression VisitMember(MemberExpression memberExpression)
             {
-                if (UnwrapEntityReference(memberExpression.Expression) is EntityReference)
+                if (UnwrapEntityReference(memberExpression.Expression) is EntityReference entityReferece)
                 {
-                    // If it matches then it is property access. All navigation accesses are already expanded.
-                    return memberExpression;
+                    // If it is mapped property then, it would get converted to a column so we don't need to expand includes.
+                    var property = entityReferece.EntityType.FindProperty(memberExpression.Member);
+                    if (property != null)
+                    {
+                        return memberExpression;
+                    }
                 }
 
                 return base.VisitMember(memberExpression);
@@ -353,7 +356,8 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             {
                 if (methodCallExpression.TryGetEFPropertyArguments(out var _, out var __))
                 {
-                    // If it matches then it is property access. All navigation accesses are already expanded.
+                    // If it is EF.Property then, it would get converted to a column or throw
+                    // so we don't need to expand includes.
                     return methodCallExpression;
                 }
 
@@ -362,6 +366,12 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
 
             protected override Expression VisitNew(NewExpression newExpression)
             {
+                // For .NET Framework only. If ctor is null that means the type is struct and has no ctor args.
+                if (newExpression.Constructor == null)
+                {
+                    return newExpression;
+                }
+
                 var arguments = new Expression[newExpression.Arguments.Count];
                 for (var i = 0; i < newExpression.Arguments.Count; i++)
                 {
@@ -378,6 +388,13 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
             {
                 replacement = null;
                 var changed = false;
+
+                // For .NET Framework only. If ctor is null that means the type is struct and has no ctor args.
+                if (newExpression.Constructor == null)
+                {
+                    return false;
+                }
+
                 if (newExpression.Arguments.Count > 0
                     && newExpression.Members == null)
                 {

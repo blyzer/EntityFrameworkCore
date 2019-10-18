@@ -21,6 +21,8 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.TestUtilities
         private readonly TestStoreContext _storeContext;
         private readonly string _dataFilePath;
         private readonly Action<CosmosDbContextOptionsBuilder> _configureCosmos;
+        private bool _initialized;
+
         private static readonly Guid _runId = Guid.NewGuid();
 
         public static CosmosTestStore Create(string name, Action<CosmosDbContextOptionsBuilder> extensionConfiguration = null)
@@ -72,6 +74,7 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.TestUtilities
 
         protected override void Initialize(Func<DbContext> createContext, Action<DbContext> seed, Action<DbContext> clean)
         {
+            _initialized = true;
             if (_dataFilePath == null)
             {
                 base.Initialize(createContext ?? (() => _storeContext), seed, clean);
@@ -146,9 +149,7 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.TestUtilities
         }
 
         public override void Clean(DbContext context)
-        {
-            CleanAsync(context).GetAwaiter().GetResult();
-        }
+            => CleanAsync(context).GetAwaiter().GetResult();
 
         public override async Task CleanAsync(DbContext context)
         {
@@ -219,7 +220,8 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.TestUtilities
 
         public override async Task DisposeAsync()
         {
-            if (_dataFilePath == null)
+            if (_initialized
+                && _dataFilePath == null)
             {
                 await _storeContext.Database.EnsureDeletedAsync();
             }

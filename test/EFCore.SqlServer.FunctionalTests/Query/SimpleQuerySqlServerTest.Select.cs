@@ -79,6 +79,29 @@ FROM [Employees] AS [e]
 WHERE [e].[EmployeeID] = 1");
         }
 
+        public override async Task Projection_of_entity_type_into_object_array(bool isAsync)
+        {
+            await base.Projection_of_entity_type_into_object_array(isAsync);
+
+            AssertSql(
+                @"SELECT [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+FROM [Customers] AS [c]
+WHERE [c].[CustomerID] LIKE N'A%'
+ORDER BY [c].[CustomerID]");
+        }
+
+        public override async Task Projection_of_multiple_entity_types_into_object_array(bool isAsync)
+        {
+            await base.Projection_of_multiple_entity_types_into_object_array(isAsync);
+
+            AssertSql(
+                @"SELECT [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+FROM [Orders] AS [o]
+LEFT JOIN [Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+WHERE [o].[OrderID] < 10300
+ORDER BY [o].[OrderID]");
+        }
+
         public override async Task Project_to_int_array(bool isAsync)
         {
             await base.Project_to_int_array(isAsync);
@@ -1025,13 +1048,9 @@ FROM [Customers] AS [c]
 WHERE [c].[CustomerID] = N'FISSA'");
         }
 
-        public override async Task Member_binding_after_ctor_arguments_fails_with_client_eval(bool isAsync)
+        public override Task Member_binding_after_ctor_arguments_fails_with_client_eval(bool isAsync)
         {
-            Assert.Equal(
-                CoreStrings.TranslationFailed("OrderBy<Customer, string>(    source: DbSet<Customer>,     keySelector: (c) => new CustomerListItem(        c.CustomerID,         c.City    ).City)"),
-                RemoveNewLines(
-                    (await Assert.ThrowsAsync<InvalidOperationException>(
-                        () => base.Member_binding_after_ctor_arguments_fails_with_client_eval(isAsync))).Message));
+            return AssertTranslationFailed(() => base.Member_binding_after_ctor_arguments_fails_with_client_eval(isAsync));
         }
 
         public override async Task Filtered_collection_projection_is_tracked(bool isAsync)

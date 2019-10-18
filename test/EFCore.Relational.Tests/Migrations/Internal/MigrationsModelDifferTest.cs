@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.EntityFrameworkCore.TestUtilities.FakeProvider;
 using Microsoft.EntityFrameworkCore.ValueGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -1372,6 +1373,92 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
                         Assert.Equal("Firefly", operation.Table);
                         Assert.Equal("Name", operation.Name);
                     }));
+        }
+
+        [ConditionalFact]
+        public void Add_seed_data_with_non_writable_column_insert_operations_with_batching()
+        {
+            Execute(
+                _ => { },
+                source => source.Entity(
+                    "Firefly",
+                    x =>
+                    {
+                        x.ToTable("Firefly", "dbo");
+                        x.Property<int>("Id");
+                        x.Property<string>("Name").HasColumnType("nvarchar(30)");
+                        x.Property<byte[]>("Version").IsRowVersion();
+                    }),
+                target => target.Entity(
+                    "Firefly",
+                    x =>
+                    {
+                        x.ToTable("Firefly", "dbo");
+                        x.Property<int>("Id");
+                        x.Property<string>("Name").HasColumnType("nvarchar(30)");
+                        x.Property<byte[]>("Version").IsRowVersion();
+                        x.HasData(
+                            new { Id = 42, Name = "Firefly 1" },
+                            new { Id = 43, Name = "Firefly 2" },
+                            new { Id = 44, Name = "Firefly 3" },
+                            new { Id = 45, Name = "Firefly 4" });
+                    }),
+                upOps => Assert.Collection(
+                    upOps,
+                    o =>
+                    {
+                        var m = Assert.IsType<InsertDataOperation>(o);
+                        Assert.Collection(
+                            ToJaggedArray(m.Values),
+                            r => Assert.Collection(
+                                 r,
+                                 v => Assert.Equal(42, v),
+                                 v => Assert.Equal("Firefly 1", v)),
+                            r => Assert.Collection(
+                                r,
+                                v => Assert.Equal(43, v),
+                                v => Assert.Equal("Firefly 2", v)),
+                            r => Assert.Collection(
+                                r,
+                                v => Assert.Equal(44, v),
+                                v => Assert.Equal("Firefly 3", v)),
+                            r => Assert.Collection(
+                                r,
+                                v => Assert.Equal(45, v),
+                                v => Assert.Equal("Firefly 4", v))
+                        );
+                    }),
+                downOps => Assert.Collection(
+                    downOps,
+                    o =>
+                    {
+                        var m = Assert.IsType<DeleteDataOperation>(o);
+                        AssertMultidimensionalArray(
+                            m.KeyValues,
+                            v => Assert.Equal(42, v));
+                    },
+                    o =>
+                    {
+                        var m = Assert.IsType<DeleteDataOperation>(o);
+                        AssertMultidimensionalArray(
+                            m.KeyValues,
+                            v => Assert.Equal(43, v));
+                    },
+                    o =>
+                    {
+                        var m = Assert.IsType<DeleteDataOperation>(o);
+                        AssertMultidimensionalArray(
+                            m.KeyValues,
+                            v => Assert.Equal(44, v));
+                    },
+                    o =>
+                    {
+                        var m = Assert.IsType<DeleteDataOperation>(o);
+                        AssertMultidimensionalArray(
+                            m.KeyValues,
+                            v => Assert.Equal(45, v));
+                    }),
+                builderOptions => builderOptions.UseFakeRelational(a => a.MaxBatchSize(4)));
         }
 
         private enum SomeEnum
@@ -7896,6 +7983,200 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
                 get => _loader.Load(this, ref _blog);
                 set => _blog = value;
             }
+        }
+
+        [ConditionalFact]
+        public void Create_table_handles_same_name_but_different_schemas_and_identifying_relationship()
+        {
+            Execute(
+                (ModelBuilder _) => { },
+                modelBuilder => modelBuilder
+                    .Entity(
+                        "Entity1",
+                        x =>
+                        {
+                            x.ToTable("Entity");
+
+                            x.Property<int>("Id");
+                            x.Property<string>("Property1");
+                        })
+                    .Entity(
+                        "Entity2",
+                        x =>
+                        {
+                            x.ToTable("Entity", "other");
+
+                            x.Property<int>("Id");
+                            x.Property<string>("Property2");
+
+                            x.HasOne("Entity1", null).WithMany().HasForeignKey("Id");
+                        }),
+                operations =>
+                {
+                    Assert.Equal(3, operations.Count);
+
+                    Assert.IsType<EnsureSchemaOperation>(operations[0]);
+
+                    var operation1 = Assert.IsType<CreateTableOperation>(operations[1]);
+                    Assert.Equal("Entity", operation1.Name);
+                    Assert.Null(operation1.Schema);
+                    Assert.Collection(
+                        operation1.Columns,
+                        x => Assert.Equal("Id", x.Name),
+                        x => Assert.Equal("Property1", x.Name));
+
+                    var operation2 = Assert.IsType<CreateTableOperation>(operations[2]);
+                    Assert.Equal("Entity", operation2.Name);
+                    Assert.Equal("other", operation2.Schema);
+                    Assert.Collection(
+                        operation2.Columns,
+                        x => Assert.Equal("Id", x.Name),
+                        x => Assert.Equal("Property2", x.Name));
+                });
+        }
+
+        [ConditionalFact]
+        public void Construction_of_shadow_values_buffer_account_for_shadow_navigations_1()
+        {
+            Execute(
+                modelBuilder => modelBuilder
+                    .Entity(
+                        "User",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.ToTable("Users");
+                            b.HasData(new { Id = 1 });
+                        })
+                    .Entity(
+                        "BaseType",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.Property<string>("Discriminator");
+                            b.Property<int>("UserId");
+                            b.ToTable("Type");
+                            b.HasDiscriminator<string>("Discriminator").HasValue("BaseType");
+                        })
+                    .Entity(
+                        "DerivedType",
+                        b =>
+                        {
+                            b.HasBaseType("BaseType");
+                            b.Property<int>("LevelId");
+                            b.HasDiscriminator().HasValue("DerivedType");
+                            b.HasData(new { Id = 1, UserId = 1, LevelId = 1 });
+                        })
+                    .Entity("BaseType")
+                        .HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId"),
+                modelBuilder => modelBuilder
+                    .Entity(
+                        "User",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.ToTable("Users");
+                            b.HasData(new { Id = 1 });
+                        })
+                    .Entity(
+                        "BaseType",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.Property<string>("Discriminator");
+                            b.Property<int>("UserId");
+                            b.ToTable("Type");
+                            b.HasDiscriminator<string>("Discriminator").HasValue("BaseType");
+                        })
+                    .Entity(
+                        "DerivedType",
+                        b =>
+                        {
+                            b.HasBaseType("BaseType");
+                            b.Property<int>("LevelId");
+                            b.HasDiscriminator().HasValue("DerivedType");
+                            b.HasData(new { Id = 1, UserId = 1, LevelId = 1 });
+                        })
+                    .Entity("BaseType")
+                        .HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId"),
+                ops => { });
+        }
+
+        [ConditionalFact]
+        public void Construction_of_shadow_values_buffer_account_for_shadow_navigations_2()
+        {
+            Execute(
+                modelBuilder => modelBuilder
+                    .Entity(
+                        "User",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.ToTable("Users");
+                            b.HasData(new { Id = 1 });
+                        })
+                    .Entity(
+                        "BaseType",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.Property<string>("Discriminator");
+                            b.Property<int>("UserId");
+                            b.ToTable("Type");
+                            b.HasDiscriminator<string>("Discriminator").HasValue("BaseType");
+                        })
+                    .Entity(
+                        "DerivedType",
+                        b =>
+                        {
+                            b.HasBaseType("BaseType");
+                            b.Property<int>("Level1Id");
+                            b.Property<double>("Level2Id");
+                            b.HasDiscriminator().HasValue("DerivedType");
+                            b.HasData(new { Id = 1, UserId = 1, Level1Id = 1, Level2Id = 1.0 });
+                        })
+                    .Entity("BaseType")
+                        .HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId"),
+                modelBuilder => modelBuilder
+                    .Entity(
+                        "User",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.ToTable("Users");
+                            b.HasData(new { Id = 1 });
+                        })
+                    .Entity(
+                        "BaseType",
+                        b =>
+                        {
+                            b.Property<int>("Id");
+                            b.Property<string>("Discriminator");
+                            b.Property<int>("UserId");
+                            b.ToTable("Type");
+                            b.HasDiscriminator<string>("Discriminator").HasValue("BaseType");
+                        })
+                    .Entity(
+                        "DerivedType",
+                        b =>
+                        {
+                            b.HasBaseType("BaseType");
+                            b.Property<int>("Level1Id");
+                            b.Property<double>("Level2Id");
+                            b.HasDiscriminator().HasValue("DerivedType");
+                            b.HasData(new { Id = 1, UserId = 1, Level1Id = 1, Level2Id = 1.0 });
+                        })
+                    .Entity("BaseType")
+                        .HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId"),
+                ops => { });
         }
 
         protected override TestHelpers TestHelpers => RelationalTestHelpers.Instance;

@@ -283,6 +283,11 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Query.Internal
                     case nameof(Enumerable.Min):
                     case nameof(Enumerable.Sum):
                         var translation = Translate(GetSelector(methodCallExpression, groupByShaperExpression));
+                        if (translation == null)
+                        {
+                            return null;
+                        }
+
                         var selector = Expression.Lambda(translation, groupByShaperExpression.ValueBufferParameter);
                         MethodInfo getMethod()
                             => methodCallExpression.Method.Name switch
@@ -478,6 +483,12 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Query.Internal
 
         protected override Expression VisitNew(NewExpression newExpression)
         {
+            // For .NET Framework only. If ctor is null that means the type is struct and has no ctor args.
+            if (newExpression.Constructor == null)
+            {
+                return newExpression;
+            }
+
             var newArguments = new List<Expression>();
             foreach (var argument in newExpression.Arguments)
             {

@@ -444,7 +444,18 @@ namespace Microsoft.EntityFrameworkCore.Query
                         .Select(g => new { CustomerID = g.Key, Count = g.Count() })));
         }
 
-        [ConditionalTheory(Skip = "Issue#17339")]
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public virtual Task Union_over_columns_with_different_nullability(bool isAsync)
+        {
+            return AssertQuery(
+                isAsync, ss => ss.Set<Customer>()
+                    .Select(c => "NonNullableConstant")
+                    .Concat(ss.Set<Customer>()
+                        .Select(c => (string)null)));
+        }
+
+        [ConditionalTheory]
 #pragma warning disable xUnit1016 // MemberData must reference a public member
         [MemberData(nameof(GetSetOperandTestCases))]
 #pragma warning restore xUnit1016 // MemberData must reference a public member
@@ -488,5 +499,20 @@ namespace Microsoft.EntityFrameworkCore.Query
         {
             "Column", "Function", "Constant", "Unary", "Binary", "ScalarSubquery"
         };
+
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public virtual Task OrderBy_Take_Union(bool isAsync)
+        {
+            return AssertQuery(
+                isAsync, ss => ss.Set<Customer>()
+                    .OrderBy(c => c.ContactName)
+                    .Take(1)
+                    .Union(ss.Set<Customer>()
+                        .OrderBy(c => c.ContactName)
+                        .Take(1)),
+                entryCount: 1,
+                assertOrder: true);
+        }
     }
 }

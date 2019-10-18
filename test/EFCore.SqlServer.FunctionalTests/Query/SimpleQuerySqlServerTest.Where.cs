@@ -335,7 +335,7 @@ SELECT [e].[EmployeeID], [e].[City], [e].[Country], [e].[FirstName], [e].[Report
 FROM [Employees] AS [e]
 WHERE ((CAST([e].[ReportsTo] AS bigint) = @__p_0) AND (CAST([e].[ReportsTo] AS bigint) IS NOT NULL AND @__p_0 IS NOT NULL)) OR (CAST([e].[ReportsTo] AS bigint) IS NULL AND @__p_0 IS NULL)",
                 //
-                @"@__p_0='' (DbType = Int64)
+                @"@__p_0=NULL (DbType = Int64)
 
 SELECT [e].[EmployeeID], [e].[City], [e].[Country], [e].[FirstName], [e].[ReportsTo], [e].[Title]
 FROM [Employees] AS [e]
@@ -347,7 +347,7 @@ WHERE ((CAST([e].[ReportsTo] AS bigint) = @__p_0) AND (CAST([e].[ReportsTo] AS b
             await base.Where_simple_closure_via_query_cache_nullable_type_reverse(isAsync);
 
             AssertSql(
-                @"@__p_0='' (DbType = Int64)
+                @"@__p_0=NULL (DbType = Int64)
 
 SELECT [e].[EmployeeID], [e].[City], [e].[Country], [e].[FirstName], [e].[ReportsTo], [e].[Title]
 FROM [Employees] AS [e]
@@ -615,13 +615,13 @@ WHERE (([e].[ReportsTo] = @__nullableIntPrm_0) AND ([e].[ReportsTo] IS NOT NULL 
             await base.Where_equals_on_null_nullable_int_types(isAsync);
 
             AssertSql(
-                @"@__nullableIntPrm_0='' (DbType = Int32)
+                @"@__nullableIntPrm_0=NULL (DbType = Int32)
 
 SELECT [e].[EmployeeID], [e].[City], [e].[Country], [e].[FirstName], [e].[ReportsTo], [e].[Title]
 FROM [Employees] AS [e]
 WHERE ((@__nullableIntPrm_0 = [e].[ReportsTo]) AND (@__nullableIntPrm_0 IS NOT NULL AND [e].[ReportsTo] IS NOT NULL)) OR (@__nullableIntPrm_0 IS NULL AND [e].[ReportsTo] IS NULL)",
                 //
-                @"@__nullableIntPrm_0='' (DbType = Int64)
+                @"@__nullableIntPrm_0=NULL (DbType = Int64)
 
 SELECT [e].[EmployeeID], [e].[City], [e].[Country], [e].[FirstName], [e].[ReportsTo], [e].[Title]
 FROM [Employees] AS [e]
@@ -1270,14 +1270,25 @@ FROM [Customers] AS [c]
 WHERE [c].[Fax] IS NULL");
         }
 
-        public override async Task Where_expression_invoke(bool isAsync)
+        public override async Task Where_expression_invoke_1(bool isAsync)
         {
-            await base.Where_expression_invoke(isAsync);
+            await base.Where_expression_invoke_1(isAsync);
 
             AssertSql(
                 @"SELECT [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
 FROM [Customers] AS [c]
 WHERE [c].[CustomerID] = N'ALFKI'");
+        }
+
+        public override async Task Where_expression_invoke_2(bool isAsync)
+        {
+            await base.Where_expression_invoke_2(isAsync);
+
+            AssertSql(
+                @"SELECT [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate]
+FROM [Orders] AS [o]
+LEFT JOIN [Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+WHERE ([c].[CustomerID] = N'ALFKI') AND [c].[CustomerID] IS NOT NULL");
         }
 
         public override async Task Where_concat_string_int_comparison1(bool isAsync)

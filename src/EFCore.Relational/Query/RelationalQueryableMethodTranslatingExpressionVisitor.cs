@@ -316,17 +316,13 @@ namespace Microsoft.EntityFrameworkCore.Query
                     return source;
                 }
 
-                var keyAccessExpression = Expression.MakeMemberAccess(
-                    source.ShaperExpression,
-                    source.ShaperExpression.Type.GetTypeInfo().GetMember(nameof(IGrouping<int, int>.Key))[0]);
-
                 var original1 = resultSelector.Parameters[0];
                 var original2 = resultSelector.Parameters[1];
 
                 var newResultSelectorBody = new ReplacingExpressionVisitor(
                         new Dictionary<Expression, Expression>
                             {
-                                { original1, keyAccessExpression }, { original2, source.ShaperExpression }
+                                { original1, translatedKey }, { original2, source.ShaperExpression }
                             })
                     .Visit(resultSelector.Body);
 
@@ -345,6 +341,12 @@ namespace Microsoft.EntityFrameworkCore.Query
             switch (expression)
             {
                 case NewExpression newExpression:
+                    // For .NET Framework only. If ctor is null that means the type is struct and has no ctor args.
+                    if (newExpression.Constructor == null)
+                    {
+                        return newExpression;
+                    }
+
                     if (newExpression.Arguments.Count == 0)
                     {
                         return newExpression;
