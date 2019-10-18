@@ -127,7 +127,7 @@ namespace Microsoft.EntityFrameworkCore.Cosmos.Internal
                     {
                         throw new InvalidOperationException(
                             CosmosStrings.PartitionKeyStoreNameMismatch(
-                                partitionKey.Name, firstEntityType.DisplayName(), partitionKey.GetPropertyName(),
+                                partitionKey.Name, firstEntityType?.DisplayName(), partitionKey.GetPropertyName(),
                                 nextPartitionKeyProperty.Name, entityType.DisplayName(), nextPartitionKeyProperty.GetPropertyName()));
                     }
                 }
