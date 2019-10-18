@@ -366,8 +366,6 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Query.Internal
             PushdownIntoSubquery();
 
             var selectMethod = (MethodCallExpression)ServerQueryExpression;
-            var groupBySource = selectMethod.Arguments[0];
-            var elementSelector = selectMethod.Arguments[1];
             _groupingParameter = Parameter(typeof(IGrouping<ValueBuffer, ValueBuffer>), "grouping");
             var groupingKeyAccessExpression = PropertyOrField(_groupingParameter, nameof(IGrouping<int, int>.Key));
             var groupingKeyExpressions = new List<Expression>();

@@ -78,8 +78,6 @@ namespace Microsoft.EntityFrameworkCore.Query.Internal
                                 groupJoinResultSelector.Parameters[1],
                                 inner,
                                 collectionSelectorBody);
-
-                            inner = Expression.Quote(Expression.Lambda(inner, outerParameter));
                         }
                         else
                         {
